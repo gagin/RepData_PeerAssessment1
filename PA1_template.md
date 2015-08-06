@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 
 
 ## Loading and preprocessing the data
@@ -11,8 +6,8 @@ output:
 One problem with the dataset is that interval labels are presented as numbers,
 
 
-```{r}
 
+```r
 # Directory is custom for your computer, set it correctly
 setwd("~/Coursera-R/RepData_PeerAssessment1/")
 
@@ -37,8 +32,6 @@ names(times)<-"times"
 
 # Now we can add times as time, let's have an additional column for that
 tata<-cbind(data,times)
-
-
 ```
 
 Was it a good idea to bind it at this step? Now all times entries have the same
@@ -46,7 +39,8 @@ current date, which is weird.
 
 ## What is mean total number of steps taken per day?
 
-```{r}
+
+```r
 sum<-tapply(data$steps,
             data$date,
             sum,
@@ -55,11 +49,21 @@ hist(sum,
      xlab="Daily steps taken",
      main="How frequently person walks much",
      breaks=10)
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+
+```r
 summary(sum)
 ```
 
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0    6778   10400    9354   12810   21190
+```
 
-Mean is `r as.integer(mean(sum))`, median is `r median(sum)`
+
+Mean is 9354, median is 10395
 Hm...
 Why median is different when called via summary() and directly via median()?
 
@@ -69,7 +73,8 @@ Why median is different when called via summary() and directly via median()?
 We collapse days by interval, and add zeroes to interval labels before making
 the linear plot - to make x label meaningful, we need actual times of day there.
 
-```{r}
+
+```r
 pattern<-tapply(data$steps,
                 data$interval,
                 mean,
@@ -91,18 +96,32 @@ plot(strptime(names(pattern),
      type="l",
      xlab="Time of day",
      ylab="Average steps per minute")
+```
 
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
+
+```r
 which.max(pattern)
 ```
 
-The most step usually happen in five minutes that start on `r format(strptime(names(which.max(pattern)),"%H%M"),"%H:%M")`
+```
+## 0835 
+##  104
+```
+
+The most step usually happen in five minutes that start on 08:35
 
 
 ## Imputing missing values
 
 Calculate the total number of missing values in the dataset
-```{r}
+
+```r
 sum(is.na(data))
+```
+
+```
+## [1] 2304
 ```
 
 Let's replace NAs with average value for the interval.
