@@ -3,9 +3,6 @@
 
 ## Loading and preprocessing the data
 
-One problem with the dataset is that interval labels are presented as numbers,
-
-
 
 ```r
 # Directory is custom for your computer, set it correctly
@@ -17,25 +14,18 @@ if(!file.exists("activity.csv")) unzip("activity.zip")
 # read the file
 data<-read.csv("activity.csv")
 
-# We will need interval labels to read as actual time, so let's add a column
-# But first, we should add make interval labels uniform
-times<-sapply(
-        data$interval,
-        function(interval){
-                paste0(
-                        paste(
-                                rep(0,4-nchar(as.character(interval))),
-                                collapse=""),
-                        interval)})
-# times<-strptime(times,"%H%M")
-names(times)<-"times"
-
-# Now we can add times as time, let's have an additional column for that
-tata<-cbind(data,times)
+# Later we will need to have intervals as actual time for charts,
+# so let us make them uniform to ease strptime conversion
+data$interval<-sapply(data$interval,
+                      function(i){
+                              i.length<-nchar(as.character(i))
+                              if(i.length<4){
+                                prefix<-paste(rep(0,4-i.length),collapse="")
+                                paste0(prefix,i)}
+                              else i
+                              }
+                      )
 ```
-
-Was it a good idea to bind it at this step? Now all times entries have the same
-current date, which is weird.
 
 ## What is mean total number of steps taken per day?
 
@@ -47,7 +37,7 @@ sum<-tapply(data$steps,
             na.rm=TRUE)
 hist(sum,
      xlab="Daily steps taken",
-     main="How frequently person walks much",
+     main="",
      breaks=10)
 ```
 
@@ -63,15 +53,10 @@ summary(sum)
 ```
 
 
-Mean is 9354, median is 10395
-Hm...
-Why median is different when called via summary() and directly via median()?
-
+Mean is 9354, median is 10400.
 
 ## What is the average daily activity pattern?
 
-We collapse days by interval, and add zeroes to interval labels before making
-the linear plot - to make x label meaningful, we need actual times of day there.
 
 
 ```r
@@ -79,22 +64,11 @@ pattern<-tapply(data$steps,
                 data$interval,
                 mean,
                 na.rm=TRUE)
-# If length of an interval label is less than 4, add zeroes at the start of the label
-names(pattern)<-sapply(
-        names(pattern),
-        function(interval){
-                paste0(
-                        paste(
-                                rep(0,4-nchar(as.character(interval))),
-                                collapse=""),
-                        interval)})
 
-# Now that interval label are uniform, we can strptime() them to time of day
-plot(strptime(names(pattern),
-              "%H%M"),
+plot(strptime(names(pattern),"%H%M"),
      pattern/5,
      type="l",
-     xlab="Time of day",
+     xlab="Time of day",  
      ylab="Average steps per minute")
 ```
 
@@ -109,7 +83,8 @@ which.max(pattern)
 ##  104
 ```
 
-The most step usually happen in five minutes that start on 08:35
+The most step usually happen in five minutes that start on
+08:35.
 
 
 ## Imputing missing values
@@ -124,13 +99,49 @@ sum(is.na(data))
 ## [1] 2304
 ```
 
-Let's replace NAs with average value for the interval.
+Let's replace NAs with average value for the interval and make a new dataset.
 
 
-3.Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```r
+d<-data
+d$steps<-sapply(seq_along(d$steps),
+                function(n){
+                  if(is.na(d$steps[n])){
+                          pattern[names(pattern)==d$interval[n]]
+                  } else d$steps[n]
+                  }
+                  )
+```
 
 
-4.Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+Now, if we rebuild the histogram, we should expect number of steps,
+as well as median and mean, to go up.
+
+
+```r
+sum1<-tapply(d$steps,
+            d$date,
+            sum,
+            na.rm=TRUE)
+hist(sum1,
+     xlab="Daily steps taken (with NAs replaced)",
+     main="",
+     breaks=10)
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
+
+```r
+summary(sum1)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    9819   10770   10770   12810   21190
+```
+
+And they did.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
