@@ -30,6 +30,7 @@ data$interval<-sapply(data$interval,
                               else i
                               }
                       )
+data$date<-as.Date(data$date,"%Y-%m-%d")
 
 ```
 
@@ -58,6 +59,8 @@ pattern<-tapply(data$steps,
                 data$interval,
                 mean,
                 na.rm=TRUE)
+
+# Convert interval to times to make x labels more meaningful
 
 plot(strptime(names(pattern),"%H%M"),
      pattern/5,
@@ -120,3 +123,29 @@ And they did.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+weekpart<-function(dt){if(weekdays(dt) %in% c("Saturday","Sunday")) "weekend" else "weekday"}
+weekpart<-sapply(d$date,weekpart)
+d<-cbind(d,weekpart)
+
+#library(ggplot2)
+#p1<-ggplot(data=d,aes(x=interval,y=steps,color=weekpart))#+geom_line()
+#p1<-qplot(sapply(interval,strptime,"%H%M"),steps,data=d,group=weekpart,geom="line")
+#print(p1)
+#hist_comp<-barchart(steps ~ interval | weekends, data=d)
+#print(hist_comp)
+library(dplyr)
+patternw<-d %>% group_by(interval,weekpart) %>% summarise(mean(steps))
+#patternw$interval<-strptime(patternw$interval,"%H%M")
+names(patternw)[3]<-"steps"
+library(lattice)
+print(xyplot(steps ~ interval | weekpart, data=patternw, layout=1:2,
+             ylab="Number of steps"))
+#p2<-qplot(interval,steps,group=weekpart,color=weekpart,geom="line",data=patternw)
+#print(p2)
+#dailyw<- d%>% group_by(date,weekpart) %>% summarise(sum(steps))
+#names(dailyw)[3]<-"steps"
+#p3<-qplot(steps,group=weekpart,color=weekpart,geom="histogram",data=patternw)
+#print(p3)
+```
