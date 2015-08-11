@@ -5,22 +5,32 @@ output:
     keep_md: true
 ---
 
+This is an exercise in using literate programming tools in R - original dataset
+has number of steps taken during 5-minute intervals over many days. We are to
+ask and answer some questions about this data. 
 
 ## Loading and preprocessing the data
 
+Main text of the document will
+show research points, while code and technical data handling specifics should
+stay in the code chunks, which will have to be commented on their own.
+
 ```{r}
 
-# Directory is custom for your computer, set it correctly
+## The data file is supposed to be downloaded prior to running the code,
+## as conditioned by this exercise.
+
+# Directory is custom for your computer, set it correctly.
 setwd("~/Coursera-R/RepData_PeerAssessment1/")
 
-# Original Github branch has the data zipped, let's extract it
+# Original Github branch has the data zipped, let's extract it.
 if(!file.exists("activity.csv")) unzip("activity.zip")
 
 # read the file
 data<-read.csv("activity.csv")
 
 # Later we will need to have intervals as actual time for charts,
-# so let us make them uniform to ease strptime conversion
+# so let us make them uniform to ease strptime conversion.
 data$interval<-sapply(data$interval,
                       function(i){
                               i.length<-nchar(as.character(i))
@@ -49,7 +59,10 @@ summary(sum)
 ```
 
 
-Mean is `r summary(sum)["Mean"]`, median is `r as.integer(summary(sum)["Median"])`.
+Mean is `r summary(sum)["Mean"]`,
+median is `r as.integer(summary(sum)["Median"])`. This person apparently
+knows a saying "10000 Steps a Day to Keep the Doctor Away" as they seem
+to target this amount of steps.         
 
 ## What is the average daily activity pattern?
 
@@ -77,7 +90,7 @@ The most step usually happen in five minutes that start on
 
 ## Imputing missing values
 
-Calculate the total number of missing values in the dataset
+How many missing values there's in the dataset?
 ```{r}
 sum(is.na(data))
 ```
@@ -119,34 +132,50 @@ hist(sum1,
 summary(sum1)
 ```
 
-And they did.
-
+We don't have a peak column at left side anymore, the distribution looks more
+reasonable now, although mean and median still close enough to their previous
+levels.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+```{r, message=FALSE}
+# Let's load libraries for this one silently with message=FALSE.
+library(dplyr)
+library(lattice)
+```
+
 ```{r}
-weekpart<-function(dt){if(weekdays(dt) %in% c("Saturday","Sunday")) "weekend" else "weekday"}
+# First, add a new column that will indicate if it's a weekend or not.  
+# Then juxtapose weekday and weekend data to see how pattern is changed.  
+weekpart<-function(dt){
+        if(weekdays(dt) %in% c("Saturday","Sunday")) "weekend" else "weekday"}
 weekpart<-sapply(d$date,weekpart)
 d<-cbind(d,weekpart)
 
-#library(ggplot2)
-#p1<-ggplot(data=d,aes(x=interval,y=steps,color=weekpart))#+geom_line()
-#p1<-qplot(sapply(interval,strptime,"%H%M"),steps,data=d,group=weekpart,geom="line")
-#print(p1)
-#hist_comp<-barchart(steps ~ interval | weekends, data=d)
-#print(hist_comp)
-library(dplyr)
-patternw<-d %>% group_by(interval,weekpart) %>% summarise(mean(steps))
-#patternw$interval<-strptime(patternw$interval,"%H%M")
-names(patternw)[3]<-"steps"
-patternw$interval<-strptime(patternw$interval,"%H%M")
-library(lattice)
-print(xyplot(steps ~ interval | weekpart, data=patternw, layout=1:2,
-             ylab="Number of steps", type="l"))
-#p2<-qplot(interval,steps,group=weekpart,color=weekpart,geom="line",data=patternw)
-#print(p2)
-#dailyw<- d%>% group_by(date,weekpart) %>% summarise(sum(steps))
-#names(dailyw)[3]<-"steps"
-#p3<-qplot(steps,group=weekpart,color=weekpart,geom="histogram",data=patternw)
-#print(p3)
+# summarise step means for each 5 minutes interval separately for each weekpart
+patternw<-d %>% group_by(interval,weekpart) %>% summarise(steps=mean(steps))
+
+# vertical placement of charts allows to see per-hour comparison more clearly
+with(patternw,
+            xyplot(steps/5 ~ as.numeric(interval) | weekpart,
+                   layout=1:2,
+                   xlab="Hour of the day",
+                   ylab="Number of steps per minute",
+                   type="l",
+                   scales=list(
+                           # Instead of numeric, draw interval as time again,
+                           # but in a simpler way this time - as xyplot()
+                           # has some issues with POSIXlt
+                           x=list(
+                                   at=seq(0,2400,200),
+                                   labels=as.character(seq(0,24,2))
+                                   )
+                           )
+                   )
+            )
 ```
+
+Morning walking peak is more pronounced on weekdays, so there's some weekday
+routine. Average weekend's morning peak is not as tall, and doesn't dominate
+as much over the following day. The person doesn't sleep in much on weekends
+though.
