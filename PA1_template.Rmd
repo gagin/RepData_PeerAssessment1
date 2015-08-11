@@ -139,9 +139,10 @@ library(dplyr)
 patternw<-d %>% group_by(interval,weekpart) %>% summarise(mean(steps))
 #patternw$interval<-strptime(patternw$interval,"%H%M")
 names(patternw)[3]<-"steps"
+patternw$interval<-strptime(patternw$interval,"%H%M")
 library(lattice)
 print(xyplot(steps ~ interval | weekpart, data=patternw, layout=1:2,
-             ylab="Number of steps"))
+             ylab="Number of steps", type="l"))
 #p2<-qplot(interval,steps,group=weekpart,color=weekpart,geom="line",data=patternw)
 #print(p2)
 #dailyw<- d%>% group_by(date,weekpart) %>% summarise(sum(steps))
